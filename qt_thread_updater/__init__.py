@@ -96,11 +96,11 @@ class ThreadUpdater(QtCore.QObject):
 
         # Lock and update variables
         self._call_latest = OrderedDict()
-        self._latest_lock = threading.RLock()
+        self._latest_lock = threading.Lock()
         self._call_in_main = OrderedDict()
-        self._main_lock = threading.RLock()
+        self._main_lock = threading.Lock()
         self._always_call = OrderedDict()
-        self._always_lock = threading.RLock()
+        self._always_lock = threading.Lock()
 
         # Control variables
         self._timeout = timeout
