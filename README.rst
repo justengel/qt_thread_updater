@@ -28,6 +28,9 @@ The ThreadUpdater offers several utilities to help with updating a widget's valu
 
     * The `timeout` variable (in seconds) indicates how often the registered functions will be called.
 
+  * delay - Call a function after the given number of seconds has passed.
+
+    * This will not be accurate. Accuracy can be improved by lowering the timeout to increase how often the timer runs.
 
 Simple Thread Example
 =====================
@@ -44,7 +47,7 @@ The example below tells the update to run lbl.setText in the main thread with th
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     lbl = QtWidgets.QLabel("Latest Count: 0")
-    lbl.resize(200, 200)
+    lbl.resize(300, 300)
     lbl.show()
 
     data = {'counter': 0}
@@ -81,7 +84,7 @@ This may be inefficient if there is no new data to update the label with.
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     lbl = QtWidgets.QLabel("Continuous Count: 0")
-    lbl.resize(200, 200)
+    lbl.resize(300, 300)
     lbl.show()
 
     data = {'counter': 0}
@@ -121,7 +124,7 @@ The example below calls the append function every time. It may not be efficient.
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     text_edit = QtWidgets.QTextEdit()
-    text_edit.resize(200, 200)
+    text_edit.resize(300, 300)
     text_edit.setReadOnly(True)
     text_edit.show()
 
@@ -133,7 +136,7 @@ The example below calls the append function every time. It may not be efficient.
             text = 'Main Count: {}'.format(data['counter'])
             get_updater().call_in_main(text_edit.append, text)
             data['counter'] += 1
-            time.sleep(0.01)  # Some delay is required
+            time.sleep(0.01)  # Some delay/waiting is required
 
     alive = threading.Event()
     th = threading.Thread(target=run, args=(alive,))
@@ -141,3 +144,42 @@ The example below calls the append function every time. It may not be efficient.
 
     app.exec_()
     alive.clear()
+
+
+Delay Example
+====================
+
+The example below calls the append function after X number of seconds has passed. The delay function will not be
+accurate, but guarantees that the function is called after X number of seconds. To increase accuracy give the
+`ThreadUpdater` a smaller timeout for it to run at a faster rate.
+
+.. code-block:: python
+
+    import time
+    import threading
+    from qtpy import QtWidgets
+    from qt_thread_updater import get_updater
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+
+    text_edit = QtWidgets.QTextEdit()
+    text_edit.resize(300, 300)
+    text_edit.setReadOnly(True)
+    text_edit.show()
+
+    now = time.time()
+
+    def update_text(set_time):
+        text_edit.append('Requested {:.04f} Updated {:.04f}'.format(set_time, time.time() - now))
+
+    # Lower the timeout so it runs at a faster rate.
+    get_updater().timeout = 0  # 0.0001  # Qt runs in milliseconds
+
+    get_updater().delay(0.5, update_text, 0.5)
+    get_updater().delay(1, update_text, 1)
+    get_updater().delay(1.5, update_text, 1.5)
+    get_updater().delay(2, update_text, 2)
+    get_updater().delay(2.5, update_text, 2.5)
+    get_updater().delay(3, update_text, 3)
+
+    app.exec_()

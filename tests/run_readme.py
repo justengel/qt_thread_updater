@@ -1,3 +1,4 @@
+from qt_thread_updater import cleanup_app
 
 
 def run_simple_thread_example():
@@ -10,7 +11,7 @@ def run_simple_thread_example():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     lbl = QtWidgets.QLabel("Latest Count: 0")
-    lbl.resize(200, 200)
+    lbl.resize(300, 300)
     lbl.show()
 
     data = {'counter': 0}
@@ -27,8 +28,10 @@ def run_simple_thread_example():
     th = threading.Thread(target=run, args=(alive,))
     th.start()
 
+    get_updater().delay(5, app.quit)  # Quit after 5 seconds
     app.exec_()
     alive.clear()
+    cleanup_app()
 
 
 def run_continuous_update():
@@ -41,7 +44,7 @@ def run_continuous_update():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     lbl = QtWidgets.QLabel("Continuous Count: 0")
-    lbl.resize(200, 200)
+    lbl.resize(300, 300)
     lbl.show()
 
     data = {'counter': 0}
@@ -62,8 +65,10 @@ def run_continuous_update():
     th = threading.Thread(target=run, args=(alive,))
     th.start()
 
+    get_updater().delay(5, app.quit)  # Quit after 5 seconds
     app.exec_()
     alive.clear()
+    cleanup_app()
 
 
 def run_call_in_main():
@@ -76,7 +81,7 @@ def run_call_in_main():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     text_edit = QtWidgets.QTextEdit()
-    text_edit.resize(200, 200)
+    text_edit.resize(300, 300)
     text_edit.setReadOnly(True)
     text_edit.show()
 
@@ -88,24 +93,55 @@ def run_call_in_main():
             text = 'Main Count: {}'.format(data['counter'])
             get_updater().call_in_main(text_edit.append, text)
             data['counter'] += 1
-            time.sleep(0.01)  # Some delay is required
+            time.sleep(0.01)  # Some delay/waiting is required
 
     alive = threading.Event()
     th = threading.Thread(target=run, args=(alive,))
     th.start()
 
+    # Quit after 2 seconds (So many events from call in main 2 waits longer than 2 seconds)
+    get_updater().delay(2, app.quit)
     app.exec_()
     alive.clear()
+    cleanup_app()
+
+
+def run_delay():
+    """Run the updater to call a function delayed."""
+    import time
+    import threading
+    from qtpy import QtWidgets
+    from qt_thread_updater import get_updater
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+
+    text_edit = QtWidgets.QTextEdit()
+    text_edit.resize(300, 300)
+    text_edit.setReadOnly(True)
+    text_edit.show()
+
+    now = time.time()
+
+    def update_text(set_time):
+        text_edit.append('Requested {:.04f} Updated {:.04f}'.format(set_time, time.time() - now))
+
+    # Lower the timeout so it runs at a faster rate.
+    get_updater().timeout = 0  # 0.0001  # Qt runs in milliseconds
+
+    get_updater().delay(0.5, update_text, 0.5)
+    get_updater().delay(1, update_text, 1)
+    get_updater().delay(1.5, update_text, 1.5)
+    get_updater().delay(2, update_text, 2)
+    get_updater().delay(2.5, update_text, 2.5)
+    get_updater().delay(3, update_text, 3)
+
+    get_updater().delay(5, app.quit)  # Quit after 5 seconds
+    app.exec_()
+    cleanup_app()
 
 
 if __name__ == '__main__':
-    from qt_thread_updater import cleanup_app
-
     run_simple_thread_example()
-    cleanup_app()
-
     run_continuous_update()
-    cleanup_app()
-
     run_call_in_main()
-    cleanup_app()
+    run_delay()
