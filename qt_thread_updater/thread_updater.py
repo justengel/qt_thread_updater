@@ -11,7 +11,12 @@ from collections import OrderedDict
 from qtpy import QtCore, QtWidgets
 
 
-__all__ = ['ThreadUpdater']
+__all__ = ['is_main_thread', 'ThreadUpdater']
+
+
+def is_main_thread():
+    """Return if the current thread is the main thread."""
+    return threading.current_thread() is threading.main_thread()
 
 
 class ThreadUpdater(QtCore.QObject):
@@ -86,7 +91,7 @@ class ThreadUpdater(QtCore.QObject):
         was problematic.
         """
         # Move to main thread before connecting the signals, so signals run in the main thread
-        if not self.is_main_thread():
+        if not is_main_thread():
             self.moveToThread(QtWidgets.QApplication.instance().thread())
 
         # Connect the signals
@@ -97,11 +102,6 @@ class ThreadUpdater(QtCore.QObject):
         # Create the timer
         self.create_timer()
         return self
-
-    @staticmethod
-    def is_main_thread():
-        """Return if the current thread is the main thread."""
-        return threading.current_thread() is threading.main_thread()
 
     @contextlib.contextmanager
     def handle_error(self, func=None):
@@ -154,7 +154,7 @@ class ThreadUpdater(QtCore.QObject):
     def create_timer(self):
         """Actually create the timer."""
         # Check to run this function in the main thread.
-        if not self.is_main_thread():
+        if not is_main_thread():
             self.creating.emit()
             return
 
@@ -172,7 +172,7 @@ class ThreadUpdater(QtCore.QObject):
     def stop(self, set_state=True):
         """Stop the updater timer."""
         # Check to run this function in the main thread.
-        if not self.is_main_thread():
+        if not is_main_thread():
             self.stopping.emit()
             return
 
@@ -186,7 +186,7 @@ class ThreadUpdater(QtCore.QObject):
     def start(self):
         """Start the updater timer."""
         # Check to run this function in the main thread.
-        if not self.is_main_thread():
+        if not is_main_thread():
             self.starting.emit()
             return
 
@@ -224,7 +224,7 @@ class ThreadUpdater(QtCore.QObject):
 
     def now_call_latest(self, func, *args, **kwargs):
         """Call the latest value in the main thread. If this is the main thread call now."""
-        if self.is_main_thread():
+        if is_main_thread():
             func(*args, **kwargs)
         else:
             self.call_latest(func, *args, **kwargs)
@@ -240,7 +240,7 @@ class ThreadUpdater(QtCore.QObject):
 
     def now_call_in_main(self, func, *args, **kwargs):
         """Call in the main thread. If this is the main thread call now."""
-        if self.is_main_thread():
+        if is_main_thread():
             func(*args, **kwargs)
         else:
             self.call_in_main(func, *args, **kwargs)
