@@ -64,14 +64,11 @@ class ThreadUpdater(QtCore.QObject):
             debug_type = self.DEFAULT_DEBUG_TYPE
 
         # Lock and update variables
+        self._lock = threading.RLock()
         self._latest_call = OrderedDict()
-        self._latest_lock = threading.RLock()
         self._every_call = OrderedDict()
-        self._every_lock = threading.RLock()
         self._always_call = OrderedDict()
-        self._always_lock = threading.RLock()
         self._delay_call = []
-        self._delay_lock = threading.RLock()
 
         # Control variables
         self._timeout = timeout
@@ -204,13 +201,13 @@ class ThreadUpdater(QtCore.QObject):
 
     def register_continuous(self, func, *args, **kwargs):
         """Register a function to be called on every update continuously."""
-        with self._always_lock:
+        with self._lock:
             self._always_call[func] = (args, kwargs)
         self.ensure_running()
 
     def unregister_continuous(self, func):
         """Unregister a function to be called on every update continuously."""
-        with self._always_lock:
+        with self._lock:
             try:
                 self._always_call.pop(func, None)
             except:
@@ -218,7 +215,7 @@ class ThreadUpdater(QtCore.QObject):
 
     def call_latest(self, func, *args, **kwargs):
         """Call the most recent values for this function in the main thread on the next update call."""
-        with self._latest_lock:
+        with self._lock:
             self._latest_call[func] = (args, kwargs)
         self.ensure_running()
 
@@ -231,7 +228,7 @@ class ThreadUpdater(QtCore.QObject):
 
     def call_in_main(self, func, *args, **kwargs):
         """Call this function in the main thread on the next update call."""
-        with self._every_lock:
+        with self._lock:
             try:
                 self._every_call[func].append((args, kwargs))
             except (KeyError, IndexError, Exception):
@@ -257,7 +254,7 @@ class ThreadUpdater(QtCore.QObject):
             **kwargs (dict): Keyword arguments to pass into the function.
         """
         now = time.time()  # Note: this is before the lock
-        with self._delay_lock:
+        with self._lock:
             self._delay_call.append(DelayedFunc(now, seconds, func, args, kwargs))
         self.ensure_running()
 
@@ -268,13 +265,10 @@ class ThreadUpdater(QtCore.QObject):
         the main thread.
         """
         # Collect the items using the thread safe lock
-        with self._always_lock:
+        with self._lock:
             always = self._always_call.copy()
-        with self._latest_lock:
             latest, self._latest_call = self._latest_call, OrderedDict()
-        with self._every_lock:
             main, self._every_call = self._every_call, OrderedDict()
-        with self._delay_lock:
             delayed = [self._delay_call.pop(i) for i in reversed(range(len(self._delay_call)))
                        if self._delay_call[i].can_run()]
 
