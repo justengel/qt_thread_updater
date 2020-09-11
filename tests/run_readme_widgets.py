@@ -35,12 +35,13 @@ def run_quickplaintextedit():
 def run_quicktextedit():
     import time
     import threading
-    from qtpy import QtWidgets
+    from qtpy import QtWidgets, QtGui
     from qt_thread_updater.widgets import QuickTextEdit
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     text_edit = QuickTextEdit()
+    text_edit.setTextBackgroundColor(QtGui.QColor(124, 124, 134))
     text_edit.resize(300, 300)
     text_edit.show()
 
@@ -106,6 +107,6 @@ def run_quicktextedit_redirect():
 
 
 if __name__ == '__main__':
-    run_quickplaintextedit()
+    # run_quickplaintextedit()
     run_quicktextedit()
     run_quicktextedit_redirect()

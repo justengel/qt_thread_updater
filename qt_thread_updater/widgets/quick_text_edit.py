@@ -81,7 +81,7 @@ class QuickPlainTextEdit(QtWidgets.QPlainTextEdit):
             self._queue = deque(self._queue, maxlen=maximum)
         super().setMaximumBlockCount(maximum)
 
-    def redirect(self, *iostreams, color='black'):
+    def redirect(self, *iostreams, color=None, fmt=None, **kwargs):
         """Return an object which writes to this text edit with the given color (if supported).
 
         This is useful for replacing sys.stdout
@@ -93,12 +93,15 @@ class QuickPlainTextEdit(QtWidgets.QPlainTextEdit):
 
         Args:
             *iostreams (object)[None]: Additional object to write to.
-            color (str)['black']: Color that the redirect object will write with.
+            color (str)[None]: String color name to write the text foreground with.
+                If fmt argument is not given this defaults to 'black'.
+            fmt (QTextCharFormat)[None]: Use this text format to write the text.
+                If this is given the color argument will not be used!
 
         Returns:
             redirect (RedirectStream): Callable write object to change the stdout.write to write to this object.
         """
-        return StreamWrite(self, *iostreams, color=color)
+        return StreamWrite(self, *iostreams, color=color, fmt=fmt, **kwargs)
 
     def write(self, text, *args, **kwargs):
         """Put data on the queue to add to the TextEdit view."""
@@ -212,7 +215,7 @@ class QuickTextEdit(QtWidgets.QTextEdit):
             self._queue = deque(self._queue, maxlen=maximum)
         self.document().setMaximumBlockCount(maximum)
 
-    def redirect(self, *iostreams, color='black'):
+    def redirect(self, *iostreams, color=None, fmt=None, **kwargs):
         """Return an object which writes to this text edit with the given color (if supported).
 
         This is useful for replacing sys.stdout
@@ -224,19 +227,33 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         Args:
             *iostreams (object)[None]: Additional object to write to.
-            color (str)['black']: Color that the redirect object will write with.
+            color (str)[None]: String color name to write the text foreground with.
+                If fmt argument is not given this defaults to 'black'.
+            fmt (QTextCharFormat)[None]: Use this text format to write the text.
+                If this is given the color argument will not be used!
 
         Returns:
             redirect (RedirectStream): Callable write object to change the stdout.write to write to this object.
         """
-        return StreamWrite(self, *iostreams, color=color)
+        return StreamWrite(self, *iostreams, color=color, fmt=fmt, **kwargs)
 
-    def write(self, text, color="black", *args, **kwargs):
-        """Put data on the queue to add to the TextEdit view."""
+    def write(self, text, color=None, fmt=None, *args, **kwargs):
+        """Put data on the queue to add to the TextEdit view.
+
+        Args:
+            text (str): String text to write.
+            color (str)[None]: String color name to write the text foreground with.
+                If fmt argument is not given this defaults to 'black'.
+            fmt (QTextCharFormat)[None]: Use this text format to write the text.
+                If this is given the color argument will not be used!
+        """
         text = str(text)
         if len(text) > 0:
-            fmt = QtGui.QTextCharFormat()
-            fmt.setForeground(QtGui.QBrush(QtGui.QColor(color)))
+            if fmt is None:
+                if color is None:
+                    color = 'black'
+                fmt = self.currentCharFormat()  # QtGui.QTextCharFormat()
+                fmt.setForeground(QtGui.QBrush(QtGui.QColor(color)))
 
             with self._queue_lock:
                 self._queue.append((text, fmt))
@@ -280,11 +297,20 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
 
 class StreamWrite(object):
-    """Custom object to overwrite a stream's write function. This could also be used as an io stream."""
+    """Custom object to overwrite a stream's write function. This could also be used as an io stream.
 
-    def __init__(self, *iostreams, color='black'):
+    Args:
+        *iostreams (tuple/io.StringIO): Any number of io streams to write to.
+        color (str)[None]: String color name to write the text foreground with.
+            If fmt argument is not given this defaults to 'black'.
+        fmt (QTextCharFormat)[None]: Use this text format to write the text.
+            If this is given the color argument will not be used!
+    """
+
+    def __init__(self, *iostreams, color=None, fmt=None, **kwargs):
         self.iostreams = [stream for stream in iostreams]
         self.color = color
+        self.fmt = fmt
 
     def add_stream(self, stream):
         """Add a stream to write to."""
@@ -297,15 +323,20 @@ class StreamWrite(object):
         except:
             pass
 
-    def write(self, text, color=None, **kwargs):
+    def write(self, text, color=None, fmt=None, **kwargs):
         """Write the text to all of the streams.
 
         This function does not indicate when an error occurs. This function passes kwargs into each stream.write().
 
         Args:
-            text (str): Text to write to the io stream.
-            color (str)[None]:
+            text (str): String text to write.
+            color (str)[None]: String color name to write the text foreground with.
+                If None the set instance value is used. If the set value is also None and fmt is None 'black' is used.
+            fmt (QTextCharFormat)[None]: Use this text format to write the text.
+                If None the set instance value is used. If this is given the color argument will not be used!
         """
+        if fmt is None:
+            fmt = self.fmt
         if not isinstance(color, (str, QtGui.QColor)):
             color = self.color
         if isinstance(color, QtGui.QColor):
@@ -315,7 +346,7 @@ class StreamWrite(object):
             try:
                 sig = inspect.signature(stream.write)
                 if 'color' in sig.parameters:
-                    stream.write(text, color=color, **kwargs)
+                    stream.write(text, color=color, fmt=fmt, **kwargs)
                 else:
                     stream.write(text, **kwargs)
             except (AttributeError, TypeError, ValueError, Exception):
