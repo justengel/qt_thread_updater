@@ -93,10 +93,9 @@ class QuickPlainTextEdit(QtWidgets.QPlainTextEdit):
 
         Args:
             *iostreams (object)[None]: Additional object to write to.
-            color (str)[None]: String color name to write the text foreground with.
-                If fmt argument is not given this defaults to 'black'.
+            color (str/QColor)[None]: String color name to write the text foreground with.
+                If this argument is None the currentCharFormat() or given fmt will be used.
             fmt (QTextCharFormat)[None]: Use this text format to write the text.
-                If this is given the color argument will not be used!
 
         Returns:
             redirect (RedirectStream): Callable write object to change the stdout.write to write to this object.
@@ -163,6 +162,7 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         self._queue_lock = threading.RLock()
         self._queue = deque()
+        self._orig_fmt = None
 
         vert_bar = self.verticalScrollBar()
         self._last_scroll_range = (vert_bar.minimum(), vert_bar.maximum())
@@ -227,10 +227,9 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         Args:
             *iostreams (object)[None]: Additional object to write to.
-            color (str)[None]: String color name to write the text foreground with.
-                If fmt argument is not given this defaults to 'black'.
+            color (str/QColor)[None]: String color name to write the text foreground with.
+                If this argument is None the currentCharFormat() or given fmt will be used.
             fmt (QTextCharFormat)[None]: Use this text format to write the text.
-                If this is given the color argument will not be used!
 
         Returns:
             redirect (RedirectStream): Callable write object to change the stdout.write to write to this object.
@@ -242,17 +241,19 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         Args:
             text (str): String text to write.
-            color (str)[None]: String color name to write the text foreground with.
-                If fmt argument is not given this defaults to 'black'.
+            color (str/QColor)[None]: String color name to write the text foreground with.
+                If this argument is None the currentCharFormat() or given fmt will be used.
             fmt (QTextCharFormat)[None]: Use this text format to write the text.
-                If this is given the color argument will not be used!
         """
         text = str(text)
         if len(text) > 0:
+            # Get and copy the format. Do not permanently change the format
             if fmt is None:
-                if color is None:
-                    color = 'black'
-                fmt = self.currentCharFormat()  # QtGui.QTextCharFormat()
+                fmt = self._orig_fmt or self.currentCharFormat()
+            fmt = QtGui.QTextCharFormat(fmt)
+
+            # Change the color
+            if color is not None:
                 fmt.setForeground(QtGui.QBrush(QtGui.QColor(color)))
 
             with self._queue_lock:
@@ -268,6 +269,7 @@ class QuickTextEdit(QtWidgets.QTextEdit):
         if len(items) == 0:
             return
 
+        self._orig_fmt = QtGui.QTextCharFormat(self.currentCharFormat())
         cursor = QtGui.QTextCursor(self.textCursor())
         cursor.beginEditBlock()
 
@@ -278,11 +280,13 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         # Insert the text
         for text, fmt in items:
-            cursor.setCharFormat(fmt)
-            cursor.insertText(text)
+            # cursor.setCharFormat(fmt)
+            cursor.insertText(text, fmt)
 
         # End edit
         cursor.endEditBlock()
+        self.setCurrentCharFormat(self._orig_fmt)
+        self._orig_fmt = None
 
     def _check_scrollToBottom(self, minv, maxv):
         """When the range changes check if it is larger than the last range and scroll to bottom if it is."""
@@ -301,10 +305,9 @@ class StreamWrite(object):
 
     Args:
         *iostreams (tuple/io.StringIO): Any number of io streams to write to.
-        color (str)[None]: String color name to write the text foreground with.
-            If fmt argument is not given this defaults to 'black'.
+        color (str/QColor)[None]: String color name to write the text foreground with.
+            If this argument is None the currentCharFormat() or given fmt will be used.
         fmt (QTextCharFormat)[None]: Use this text format to write the text.
-            If this is given the color argument will not be used!
     """
 
     def __init__(self, *iostreams, color=None, fmt=None, **kwargs):
@@ -330,10 +333,11 @@ class StreamWrite(object):
 
         Args:
             text (str): String text to write.
-            color (str)[None]: String color name to write the text foreground with.
-                If None the set instance value is used. If the set value is also None and fmt is None 'black' is used.
+            color (str/QColor)[None]: String color name to write the text foreground with.
+                If None the set instance value is used. If the set argument is None the currentCharFormat() or given
+                fmt will be used.
             fmt (QTextCharFormat)[None]: Use this text format to write the text.
-                If None the set instance value is used. If this is given the color argument will not be used!
+                If None the set instance value is used.
         """
         if fmt is None:
             fmt = self.fmt

@@ -68,7 +68,7 @@ def run_quicktextedit_redirect():
     import sys
     import time
     import threading
-    from qtpy import QtWidgets
+    from qtpy import QtWidgets, QtGui
     from qt_thread_updater.widgets import QuickTextEdit
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -77,7 +77,9 @@ def run_quicktextedit_redirect():
     text_edit.resize(300, 300)
     text_edit.show()
 
-    sys.stdout = text_edit.redirect(sys.__stdout__, color='blue')
+    fmt = QtGui.QTextCharFormat()
+    fmt.setBackground(QtGui.QColor(124, 124, 134))
+    sys.stdout = text_edit.redirect(sys.__stdout__, color='blue', fmt=fmt)
     sys.stderr = text_edit.redirect(sys.__stderr__, color='red')
 
     data = {'counter': 0}
@@ -108,5 +110,5 @@ def run_quicktextedit_redirect():
 
 if __name__ == '__main__':
     # run_quickplaintextedit()
-    run_quicktextedit()
+    # run_quicktextedit()
     run_quicktextedit_redirect()
