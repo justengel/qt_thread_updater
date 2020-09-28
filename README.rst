@@ -289,8 +289,8 @@ Display print (stdout and stderr) in a QTextEdit with color.
     text_edit.resize(300, 300)
     text_edit.show()
 
-    sys.stdout = text_edit.redirect(color='blue', iostream=sys.__stdout__)
-    sys.stderr = text_edit.redirect(color='red', iostream=sys.__stderr__)
+    sys.stdout = text_edit.redirect(sys.__stdout__, color='blue')
+    sys.stderr = text_edit.redirect(sys.__stderr__, color='red')
 
     data = {'counter': 0}
 
