@@ -1,7 +1,5 @@
 recursive-include */resources *
 recursive-include */templates *
-recursive-include */sdl2_win64 *
-recursive-include */sdl2_win32 *
 recursive-include bin *
 recursive-include test *
 recursive-include docs *
