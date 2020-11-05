@@ -275,7 +275,6 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         self._orig_fmt = QtGui.QTextCharFormat(self.currentCharFormat())
         cursor = QtGui.QTextCursor(self.textCursor())
-        cursor.beginEditBlock()
 
         # Move and check the position
         # old_pos = cursor.position()
@@ -284,11 +283,12 @@ class QuickTextEdit(QtWidgets.QTextEdit):
 
         # Insert the text
         for text, fmt in items:
+            cursor.beginEditBlock()
             # cursor.setCharFormat(fmt)
             cursor.insertText(text, fmt)
+            cursor.endEditBlock()
 
         # End edit
-        cursor.endEditBlock()
         self.setCurrentCharFormat(self._orig_fmt)
         self._orig_fmt = None
 
