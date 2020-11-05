@@ -207,6 +207,10 @@ class QuickTextEdit(QtWidgets.QTextEdit):
         """Copy all of the text in the monitor to the clipboard."""
         clipboard(self.toPlainText())
 
+    def maximumBlockCount(self):
+        """Return the maximum number of blocks to display."""
+        return self.document().maximumBlockCount()
+
     def setMaximumBlockCount(self, maximum):
         """Set the maximum number of blocks."""
         with self._queue_lock:
