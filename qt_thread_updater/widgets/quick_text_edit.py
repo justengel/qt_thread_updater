@@ -127,7 +127,11 @@ class QuickPlainTextEdit(QtWidgets.QPlainTextEdit):
         # is_end = cursor.position() == old_pos
 
         # Insert the text (This will insert text even without setTextCursor)
-        cursor.insertText(text)
+        try:
+            cursor.insertText(text)
+        except (ValueError, Exception):
+            # Cannot use non printable string characters
+            cursor.insertText(''.join(x for x in text if x.isprintable()))
         cursor.endEditBlock()
 
     def _check_scrollToBottom(self, minv, maxv):
@@ -285,7 +289,11 @@ class QuickTextEdit(QtWidgets.QTextEdit):
         for text, fmt in items:
             cursor.beginEditBlock()
             # cursor.setCharFormat(fmt)
-            cursor.insertText(text, fmt)
+            try:
+                cursor.insertText(text, fmt)
+            except (ValueError, Exception):
+                # Cannot use non printable string characters
+                cursor.insertText(''.join(x for x in text if x.isprintable()), fmt)
             cursor.endEditBlock()
 
         # End edit
