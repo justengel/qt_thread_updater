@@ -35,11 +35,12 @@ def run_simple_thread_example():
 
 
 def run_continuous_update():
-    """Run the continuous update example."""
+    """Run the continuous update example that uses the global functions."""
     import time
     import threading
     from qtpy import QtWidgets
-    from qt_thread_updater import get_updater
+    import qt_thread_updater
+    # from qt_thread_updater import get_updater
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
@@ -49,11 +50,14 @@ def run_continuous_update():
 
     data = {'counter': 0}
 
+    qt_thread_updater.set_updater(qt_thread_updater.ThreadUpdater(1/60))
+
+    @qt_thread_updater.register_continuous
     def update():
         """Update the label with the current value."""
         lbl.setText('Continuous Count: {}'.format(data['counter']))
 
-    get_updater().register_continuous(update)
+    # get_updater().register_continuous(update)
 
     def run(is_alive):
         is_alive.set()
@@ -65,7 +69,7 @@ def run_continuous_update():
     th = threading.Thread(target=run, args=(alive,))
     th.start()
 
-    get_updater().delay(5, app.quit)  # Quit after 5 seconds
+    qt_thread_updater.delay(5, app.quit)  # Quit after 5 seconds
     app.exec_()
     alive.clear()
     cleanup_app()

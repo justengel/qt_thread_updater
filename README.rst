@@ -37,6 +37,7 @@ ThreadUpdater Examples
 
 Below are some examples of how the ThreadUpdater would normally be used.
 
+
 Simple Thread Example
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -84,7 +85,8 @@ This may be inefficient if there is no new data to update the label with.
     import time
     import threading
     from qtpy import QtWidgets
-    from qt_thread_updater import get_updater
+    import qt_thread_updater
+    # from qt_thread_updater import get_updater
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
@@ -94,11 +96,14 @@ This may be inefficient if there is no new data to update the label with.
 
     data = {'counter': 0}
 
+    qt_thread_updater.set_updater(qt_thread_updater.ThreadUpdater(1/60))
+
+    @qt_thread_updater.register_continuous
     def update():
         """Update the label with the current value."""
         lbl.setText('Continuous Count: {}'.format(data['counter']))
 
-    get_updater().register_continuous(update)
+    # get_updater().register_continuous(update)
 
     def run(is_alive):
         is_alive.set()
@@ -110,8 +115,10 @@ This may be inefficient if there is no new data to update the label with.
     th = threading.Thread(target=run, args=(alive,))
     th.start()
 
+    qt_thread_updater.delay(5, app.quit)  # Quit after 5 seconds
     app.exec_()
     alive.clear()
+    cleanup_app()
 
 
 Call In Main Example

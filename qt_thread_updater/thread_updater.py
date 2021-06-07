@@ -200,10 +200,14 @@ class ThreadUpdater(QtCore.QObject):
             self.starting.emit()
 
     def register_continuous(self, func, *args, **kwargs):
-        """Register a function to be called on every update continuously."""
+        """Register a function to be called on every update continuously.
+
+        This function can be used as a decorator.
+        """
         with self._lock:
             self._always_call[func] = (args, kwargs)
         self.ensure_running()
+        return func
 
     def unregister_continuous(self, func):
         """Unregister a function to be called on every update continuously."""

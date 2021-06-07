@@ -6,8 +6,11 @@ from qtpy import QtWidgets
 from qt_thread_updater.thread_updater import ThreadUpdater
 
 
-__all__ = ['get_updater', 'set_updater', 'cleanup_app',
-           'get_global_updater_mngr', 'set_global_updater_mngr', 'GlobalUpdaterManager']
+__all__ = [
+    'get_updater', 'set_updater', 'cleanup_app',
+    'get_global_updater_mngr', 'set_global_updater_mngr', 'GlobalUpdaterManager',
+    'is_running', 'stop', 'start', 'unregister_continuous',
+    'register_continuous', 'call_latest', 'call_in_main', 'delay']
 
 
 def get_updater():
@@ -104,3 +107,55 @@ class GlobalUpdaterManager(object):
 
 # Set the default global updater manager
 set_global_updater_mngr(GlobalUpdaterManager())
+
+
+def is_running():
+    """Return if running."""
+    return get_updater().is_running()
+
+
+def stop(set_state=True):
+    """Stop the updater timer."""
+    return get_updater().stop(set_state)
+
+
+def start():
+    """Start the updater timer."""
+    return get_updater().start()
+
+
+def register_continuous(func, *args, **kwargs):
+    """Register a function to be called on every update continuously.
+
+    This function can be used as a decorator.
+    """
+    return get_updater().register_continuous(func, *args, **kwargs)
+
+
+def unregister_continuous(func):
+    """Unregister a function to be called on every update continuously."""
+    return get_updater().unregister_continuous(func)
+
+
+def call_latest(func, *args, **kwargs):
+    """Call the most recent values for this function in the main thread on the next update call."""
+    return get_updater().call_latest(func, *args, **kwargs)
+
+
+def call_in_main(func, *args, **kwargs):
+    """Call this function in the main thread on the next update call."""
+    return get_updater().call_in_main(func, *args, **kwargs)
+
+
+def delay(seconds, func, *args, **kwargs):
+    """Call the given function after the given number of seconds has passed.
+
+    This will not be accurate unless your timeout is at a high rate (lower timeout number).
+
+    Args:
+        seconds (float/int): Number of seconds to wait until calling the function.
+        func (callable): Function to call.
+        *args (tuple): Positional arguments to pass into the function.
+        **kwargs (dict): Keyword arguments to pass into the function.
+    """
+    return get_updater().delay(seconds, func, *args, **kwargs)
